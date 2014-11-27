@@ -1,0 +1,105 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+<meta charset="utf-8"/>  
+<title></title>
+<style type="text/css">  
+html{height:100%}  
+body{height:100%;margin:0px;padding:0px}  
+#container{height:100%}
+.infoControl{
+color:white;
+filter:alpha(opacity=80);  /*支持 IE 浏览器*/
+-moz-opacity:0.80; /*支持 FireFox 浏览器*/
+opacity:0.80;  /*支持 Chrome, Opera, Safari 等浏览器*/
+}
+#custom{
+width:300px;
+}
+#custom span{
+	cursor:pointer;
+}
+#custom span.active{
+	background: blue;
+}
+</style>
+<script>
+Date.prototype.Format = function(fmt)   
+{ //author: meizz   
+  var o = {   
+    "M+" : this.getMonth()+1,                 //月份   
+    "d+" : this.getDate(),                    //日   
+    "h+" : this.getHours(),                   //小时   
+    "m+" : this.getMinutes(),                 //分   
+    "s+" : this.getSeconds(),                 //秒   
+    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
+    "S+"  : this.getMilliseconds()             //毫秒   
+  };   
+  if(/(y+)/.test(fmt))   
+    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+  for(var k in o)   
+    if(new RegExp("("+ k +")").test(fmt))   
+  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr(("00"+ o[k]).length-RegExp.$1.length)));   
+  return fmt;   
+}
+</script>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=8fGnKKi1WTZdVnAY6DmAPGyK"></script>
+<script type="text/javascript" src="base.js"></script>
+<script src="/jquery.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+</head>  
+<body>  
+  <div id="container"></div>
+  <script type="text/javascript">
+var map = new BMap.Map("container");          // 创建地图实例
+map.enableScrollWheelZoom();
+var MyIcon=new BMap.Icon("http://api.map.baidu.com/library/CurveLine/1.5/src/circle.png",new BMap.Size(16, 16));
+var point = new BMap.Point(116.404, 39.925);
+map.centerAndZoom(point, 14 );
+var center = null;
+var polys;
+var thePoly, theTarget;
+var socket = io();
+	socket.emit('history','');
+	socket.on('history_return',	function(polygons){
+		polys = polygons;
+		console.log(polys);
+		var customBox = new InfoControl('custom');
+		customBox.defaultOffset = new BMap.Size(0, 0);
+		customBox.setInfo(null);
+		map.addControl(customBox);
+		customBox.hide('right');
+		polygons.map(function(obj, index){
+			var date = new Date();
+			date.setTime(obj.time);
+			$('#custom').prepend('<span class="time" value="'+index+'">'+date.Format("yyyy-MM-dd hh:mm:ss.SSS")+'</span><br/>');
+		})
+		$('#custom').on('click','.time',function(){
+			$('#custom .active').removeClass('active');
+			$(this).addClass('active');
+			var index = $(this).attr('value');
+			var path = JSON.parse(polys[index].polygon);
+			path = path.map( function(p){
+				return new BMap.Point( p.lng, p.lat );
+			});
+			var target = JSON.parse(polys[index].target);
+			map.removeOverlay( thePoly );
+			map.removeOverlay( theTarget);
+			if ( target != null ){
+				theTarget =  new BMap.Marker(new BMap.Point( target.lng, target.lat),{icon:MyIcon});
+				map.addOverlay(theTarget);
+			}
+			
+			thePoly = new BMap.Polygon(path, {strokeColor:"blue", strokeWeight:2, strokeOpacity:0.5, fillColor:'yellow'});
+			if ( center == null ){
+				center = path[0];
+				map.centerAndZoom( center, 14 );
+				center = null;
+			}
+			
+			map.addOverlay(thePoly);
+		});
+	});
+</script>
+</body>
+</html>
