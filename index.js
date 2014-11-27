@@ -6,15 +6,8 @@ var async = require("async");
 
 /****mysql connection****/
 var mysql = require('mysql');
-var conn = mysql.createConnection({
-	host:'localhost',
-	user:'root',
-	database:'map',
-	//password:'',
-	password:'123456',
-	//port:3306
-	port:'/opt/lampp/var/mysql/mysql.sock'
-});
+var mysqlConf = require('./db/config.js');
+var conn = mysql.createConnection(mysqlConf);
 conn.connect(function(err){
 	//connected!(unless 'err' is set)
 	if ( err ){
