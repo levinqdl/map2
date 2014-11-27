@@ -312,18 +312,25 @@ $('#enable_hand').click(function(){
 })
 $('#draw').click(function(){
 	earse();
+	var promises = [];
 	for ( var i = 1; i <= 3; i++ ){
+		var dtd = new $.Deferred();
+		promises.push(dtd);
 		var inputs = $('.p'+i).find('input');
 		var x = inputs[0].value;
 		var y = inputs[1].value;
 		var ang = inputs[2].value;
-		var p = new Point(x, y, true, true);
+		var p = new Point(x, y, true, true, {i:i, ang:ang, dtd:dtd});
 		$.when(p.dtd).done(function(){
-			component[i-1] = new Sector(p ,Number(ang), range, config_arr[i-1]);
-			component[i-1].draw(20000);
+			console.log(this);
+			component[this.i-1] = new Sector(this.p ,Number(this.ang), range, config_arr[this.i-1]);
+			component[this.i-1].draw(20000);
+			this.dtd.resolve();
 		});
 	}
-	target();
+	$.when.apply(undefined, promises).done(function(){
+		target();
+	});
 });
 $('#rangeInput').change(function(){
 	range = $(this).val()/2;

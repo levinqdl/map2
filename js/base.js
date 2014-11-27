@@ -15,18 +15,21 @@ function getPoint ( x, y ){
 	});
 	return dtd.promise();
 }
-function Point( x, y, lngLat, gps ){
+function Point( x, y, lngLat, gps, context ){
 	this.dtd = $.Deferred();
+	if ( !context ){
+		context = {};
+	}
 	if ( lngLat ){
 		if ( gps ){
 			x = Math.floor(x/100) + ( x - Math.floor(x/100) * 100 ) / 60;
 			y = Math.floor(y/100) + ( y - Math.floor(y/100) * 100 ) / 60;
 			gpsPoint = new BMap.Point(x,y);
-			var obj = this;
+			context.p = this;
 			BMap.Convertor.translate(gpsPoint,0,function(point){
-				obj.bmap = point;
-				obj.pixel = lngLatToPoint( point.lng, point.lat );
-				obj.dtd.resolve();
+				context.p.bmap = point;
+				context.p.pixel = lngLatToPoint( point.lng, point.lat );
+				context.p.dtd.resolveWith(context);
 			});
 		} else {
 			this.bmap = new BMap.Point(x, y);//经纬坐标表示
