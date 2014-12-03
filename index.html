@@ -40,14 +40,14 @@ opacity:0.80;  /*支持 Chrome, Opera, Safari 等浏览器*/
 	line-height:30px;
 }
 #info{
-	width:190px;
+	width:210px;
 }
 #sector, #cars{
 	width:190px;
 	padding:10px 0;
 }
 #custom{
-width:350px;
+width:460px;
 height:250px;
 }
 
@@ -61,7 +61,7 @@ float:right;
 }
 
 #targetBox{
-width: 350px;
+width: 250px;
 height:125px;
 }
 #connection{
@@ -83,21 +83,20 @@ height:125px;
 <script src="/jquery.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-var tpl = "<div class='head'>信息</div><div class='items'><div class='item'>TEL:{TEL}</div><div class='item'>LAC:{LAC}</div><div class='item'>CID:{CID}</div><div class='item'>F:{F}</div><div class='item'>TMSI:{TMSI}</div><div class='item'>TA:{TA}</div></div>";
+var tpl = "<div class='head'>信息</div><div class='items'><div class='item'>目标号码:{TEL}</div><div class='item'>大区号:{LAC}</div><div class='item'>小区号:{CID}</div><div class='item'>频点:{F}</div><div class='item'>临时识别码:{TMSI}</div><div class='item'>时间调整:{TA}</div></div>";
 var tpl2 = "<div class='head'>手动控制<input type='checkbox' id='enable_hand'/></div>"
-	+"<fieldset class='p1'><legend>P1</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/></fieldset>"
-	+"<fieldset class='p2'><legend>P2</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/></fieldset>"
-	+"<fieldset class='p3'><legend>P3</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/></fieldset>"
-	+"夹角：<input type='text' value='20' id='rangeInput'/>"
+	+"<fieldset class='p1'><legend>0号车</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/>A:<input type='text' name='range'/></fieldset>"
+	+"<fieldset class='p2'><legend>1号车</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/>A:<input type='text' name='range'/></fieldset>"
+	+"<fieldset class='p3'><legend>2号车</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/>A:<input type='text' name='range'/></fieldset>"
 	+"<input type='button' value='draw' id='draw'/>";
 var tpl3 = "<div class='head'>信号选择</div>"
-	+"<div class='items'>信号1 <input type='checkbox' id='c1' name='0' checked/><br/>"
-	+"信号2 <input type='checkbox' id='c2' name='1' checked/><br/>"
-	+"信号3 <input type='checkbox' id='c3' name='2' checked/><br/></div>";
+	+"<div class='items'>0号车 <input type='checkbox' id='c1' name='0' checked/><br/>"
+	+"1号车 <input type='checkbox' id='c2' name='1' checked/><br/>"
+	+"2号车 <input type='checkbox' id='c3' name='2' checked/><br/></div>";
 var tpl4 = "<div class='head'>信号状态</div>"
-	+"<div class='items'>信号1：<span id='signal0'>未连接</span><br/>"
-	+"信号2：<span id='signal1'>未连接</span><br/>"
-	+"信号3：<span id='signal2'>未连接</span><br/></div>";
+	+"<div class='items'>0号车：<span id='signal0'>未连接</span><br/>"
+	+"1号车：<span id='signal1'>未连接</span><br/>"
+	+"2号车：<span id='signal2'>未连接</span><br/></div>";
 var tpl5 = "<div class='head'>连接信号</div>"
 	+"<div class='items'>"
 	+"<div class='item' id='car0'></div>"
@@ -182,6 +181,7 @@ var tpl6 = "<div class='head'>目标</div>"
 			$('fieldset.p'+n).find('input[name=x]').val(info.j);
 			$('fieldset.p'+n).find('input[name=y]').val(info.w);
 			$('fieldset.p'+n).find('input[name=ang]').val(info.dir);
+			$('fieldset.p'+n).find('input[name=range]').val(info.ang);
 		}
 	}
 	function draw(infos){
@@ -200,7 +200,7 @@ var tpl6 = "<div class='head'>目标</div>"
 					center = p;
 					map.centerAndZoom(center.bmap, 12 );
 				}
-				var sector = new Sector( p, Number(info.dir), range, config_arr[info.n]);
+				var sector = new Sector( p, Number(info.dir), Number(info.ang)/2, config_arr[info.n]);
 				if ( component[info.n] ){
 					component[info.n].remove();
 				}
@@ -320,10 +320,11 @@ $('#draw').click(function(){
 		var x = inputs[0].value;
 		var y = inputs[1].value;
 		var ang = inputs[2].value;
-		var p = new Point(x, y, true, true, {i:i, ang:ang, dtd:dtd});
+		var range = inputs[3].value;
+		var p = new Point(x, y, true, true, {i:i, ang:ang, range:range, dtd:dtd});
 		$.when(p.dtd).done(function(){
 			console.log(this);
-			component[this.i-1] = new Sector(this.p ,Number(this.ang), range, config_arr[this.i-1]);
+			component[this.i-1] = new Sector(this.p ,Number(this.ang), Number(this.range)/2, config_arr[this.i-1]);
 			component[this.i-1].draw(20000);
 			this.dtd.resolve();
 		});
@@ -332,13 +333,10 @@ $('#draw').click(function(){
 		target();
 	});
 });
-$('#rangeInput').change(function(){
-	range = $(this).val()/2;
-});
 
 var targetBox = new InfoControl('targetBox');
 targetBox.defaultAnchor = BMAP_ANCHOR_BOTTOM_RIGHT;
-targetBox.defaultOffset = new BMap.Size(370,10);
+targetBox.defaultOffset = new BMap.Size(480,10);
 targetBox.setInfo(null);
 map.addControl(targetBox);
 targetBox.hide('bottom');
