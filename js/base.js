@@ -104,6 +104,7 @@ Line.prototype.draw = function( length ){
 	{strokeColor:this.config.lineColor, strokeWeight:2, strokeOpacity:0.5}    
 	);
 	map.addOverlay(this.polyline);
+	return point;
 }
 Line.prototype.remove = function( ){
 	map.removeOverlay( this.polyline);
@@ -140,13 +141,18 @@ function slope( ang ){
 function Sector ( p, ang, range, config){
 	this.p = p;
 	this.lines = [new Line( p, ang - range ,config), new Line( p, ang + range, config )];
+	this.sidePoints = [];
 }
 //绘制扇形区域
 Sector.prototype.draw = function(length){
 	this.p.draw();
 	for ( i in this.lines ){
-		this.lines[i].draw(length);
+		var point = this.lines[i].draw(length);
+		this.sidePoints.push(point);
 	}
+	this.polygon = new Polygon();
+	this.sidePoints.unshift(this.p);
+	this.polygon.path = this.sidePoints;
 }
 Sector.prototype.remove = function(){
 	this.p.remove();

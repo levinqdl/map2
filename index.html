@@ -251,7 +251,7 @@ var tpl6 = "<div class='head'>目标</div>"
 			s1 = component[keys[0]];
 			s2 = component[keys[1]];
 
-			polygon1 = s1.intersection(s2);
+			polygon1 = s1.clip(s2.polygon);
 			if ( keys.length == 3 ){
 				s3 = component[2];
 
