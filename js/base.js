@@ -66,7 +66,7 @@ function Line ( p, ang, config, endPoint ){
 		} else {
 			k = ( endPoint.pixel.y - p.pixel.y ) / ( endPoint.pixel.x - p.pixel.x );
 		}
-	} else if ( ang ){
+	} else if ( typeof ang !== 'undefined' && ang !== null  ){
 		this.ang = ang *0.017453293; //转为弧度
 		if ( this.ang == 0 ){
 			k == null;

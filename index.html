@@ -274,7 +274,9 @@ var tpl6 = "<div class='head'>目标</div>"
 		//targetPoint.remove();
 		for ( var i in component ){
 			component[i].remove();
-			polygon2.remove();
+			if (polygon2){
+				polygon2.remove();
+			}
 		}
 		component = {};
 	}
