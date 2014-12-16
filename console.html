@@ -10,7 +10,7 @@ function fillInput (name, value) {
 }
 function ajaxSubmit(dataPara, fn) {    
     $.ajax({
-        url: "http://localhost:3001/call",
+        url: "/call",
         type: "post",
         data: {json:dataPara},
         success: fn
