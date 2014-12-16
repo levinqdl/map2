@@ -47,10 +47,9 @@ function draw(infos, findTarget){
 				info.dir = this.p.direction(targetPoint);
 			}
 
-			if ( center == null ){
+
 				center = this.p;
 				map.centerAndZoom(center.bmap, 12 );
-			}
 			if ( component[info.n] ){
 				component[info.n].remove();
 			}
@@ -152,6 +151,9 @@ socket.on('target', function(msg){
 	<script>
 var map = new BMap.Map("container");          // 创建地图实例
 map.enableScrollWheelZoom();
+var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
+map.addControl(scaleControl);
+map.addControl(new BMap.MapTypeControl());
 // var point = new Point(77.32111, 38.70852);
 var point = new Point(116.404, 39.925, true);
 map.centerAndZoom(point.bmap, 12 );
