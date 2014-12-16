@@ -1,420 +1,165 @@
-<!DOCTYPE html>  
-<html>  
-<head>  
-<meta charset="utf-8"/>  
-<title></title>
+<!doctype html>
+<html>
+<meta chartset="utf-8"/>
+<title>定位试验</title>
 <style type="text/css">  
 html{height:100%}  
 body{height:100%;margin:0px;padding:0px}  
 #container{height:100%}
-.anchorBL{  
-       display:none;  
-   }  
-.infoControl{
-color:white;
-filter:alpha(opacity=80);  /*支持 IE 浏览器*/
--moz-opacity:0.80; /*支持 FireFox 浏览器*/
-opacity:0.80;  /*支持 Chrome, Opera, Safari 等浏览器*/
-}
-.landscape {
-	display:table;
-}
-.landscape .head{
-	vertical-align:middle; 
-	display:table-cell; 
-	vertical-align:middle;
-	text-align:center;
-	width:30px;
-	height:100%;
-	writing-mode:tb-rl;
-}
-.landscape .items{
-	padding:10px;
-	display:inline-block;
-	width:auto;
-	height: 100%;
-}
-.portait .head{
+.head{
 	text-align:center;
 	height:30px;
 	line-height:30px;
 }
 #info{
 	width:210px;
-}
-#sector, #cars{
-	width:190px;
-	padding:10px 0;
-}
-#custom{
-width:460px;
-height:250px;
-}
-
-#custom input[type=text], #targetBox input[type=text]{
-width:75px;
-margin-right:10px;
-}
-#custom #draw, #targetBox #drawTarget{
-margin:10px;
-float:right;
-}
-
-#targetBox{
-width: 250px;
-height:125px;
-}
-#connection{
-	width:600px;
-	height:200px;
-}
-#connection .items{
-	padding:20px;
-	width:100%;
-}
-#connection .item{
-	width:33%;
-	display:inline-block;
+	color:white;
+	filter:alpha(opacity=80);  /*支持 IE 浏览器*/
+	-moz-opacity:0.80; /*支持 FireFox 浏览器*/
+	opacity:0.80;  /*支持 Chrome, Opera, Safari 等浏览器*/
 }
 </style>
 <script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=8fGnKKi1WTZdVnAY6DmAPGyK"></script>
 <script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
-<script type="text/javascript" src="base.js"></script>
-<script src="/jquery.js"></script>
+<script type="text/javascript" src="/js/base.js"></script>
+<script src="/js/jquery-1.11.1.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
+var scale = 25000;
 var tpl = "<div class='head'>信息</div><div class='items'><div class='item'>目标号码:{TEL}</div><div class='item'>大区号:{LAC}</div><div class='item'>小区号:{CID}</div><div class='item'>频点:{F}</div><div class='item'>临时识别码:{TMSI}</div><div class='item'>时间调整:{TA}</div></div>";
-var tpl2 = "<div class='head'>手动控制<input type='checkbox' id='enable_hand'/></div>"
-	+"<fieldset class='p1'><legend>0号车</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/>A:<input type='text' name='range'/></fieldset>"
-	+"<fieldset class='p2'><legend>1号车</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/>A:<input type='text' name='range'/></fieldset>"
-	+"<fieldset class='p3'><legend>2号车</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/>D:<input type='text' name='ang'/>A:<input type='text' name='range'/></fieldset>"
-	+"<input type='button' value='draw' id='draw'/>";
-var tpl3 = "<div class='head'>信号选择</div>"
-	+"<div class='items'>0号车 <input type='checkbox' id='c1' name='0' checked/><br/>"
-	+"1号车 <input type='checkbox' id='c2' name='1' checked/><br/>"
-	+"2号车 <input type='checkbox' id='c3' name='2' checked/><br/></div>";
-var tpl4 = "<div class='head'>信号状态</div>"
-	+"<div class='items'>0号车：<span id='signal0'>未连接</span><br/>"
-	+"1号车：<span id='signal1'>未连接</span><br/>"
-	+"2号车：<span id='signal2'>未连接</span><br/></div>";
-var tpl5 = "<div class='head'>连接信号</div>"
-	+"<div class='items'>"
-	+"<div class='item' id='car0'></div>"
-	+"<div class='item' id='car1'></div>"
-	+"<div class='item' id='car2'></div>"
-	+"</div>";
-var tpl6 = "<div class='head'>目标</div>"
-	+"<fieldset class='p4'><legend>Target</legend>E:<input type='text' name='x'/>N:<input type='text' name='y'/></fieldset>"
-	+"<input type='button' value='draw' id='drawTarget'/>";
-	var component= {};
-	var infoWindows = {};
-	var polygon1, polygon2, targetPoint;
-	var custom = false;
-	var carEnable = [true, true, true];
-	var range = 10;
-	var infoOpt = {
-	  width : 100,     // 信息窗口宽度
-	  height: 100,     // 信息窗口高度
-	  title: "xxx",
-	  enableMessage:false,//设置允许信息窗发送短息
-	  enableAutoPan: false,
+var component= {};
+var polygon1, polygon2, targetPoint;
+var center = null;
+var infos;
+//sector options
+var config_arr = [{lineColor: 'blue'},{lineColor: 'red'},{lineColor: 'black'}];
+var MyIcon=new BMap.Icon("http://api.map.baidu.com/library/CurveLine/1.5/src/circle.png",new BMap.Size(16, 16));
+
+function draw(infos, findTarget){
+	for ( var i = 0; i < infos.length; i++ ){
+		var info = infos[i];
+		
+		var p = new Point(info.j, info.w, true, true, {msg:info});
+		$.when( p.dtd ).done(function(){
+			var info = this.msg;
+
+			if ( findTarget ){
+				info.dir = this.p.direction(targetPoint);
+			}
+
+			if ( center == null ){
+				center = this.p;
+				map.centerAndZoom(center.bmap, 12 );
+			}
+			if ( component[info.n] ){
+				component[info.n].remove();
+			}
+
+			var sector = new Sector( this.p, Number(info.dir), Number(info.ang)/2, config_arr[info.n]);
+			
+			component[info.n] = sector;
+			
+			sector.draw(scale);
+			target();
+		});
 	}
-	//sector options
-	var config_arr = [{lineColor: 'blue'},{lineColor: 'red'},{lineColor: 'black'}];
+	infos = null;
 	
-	var socket = io();
-	socket.emit('chat message', 'hello');
-	socket.on('car_lost', function(msg){
-		console.log( msg );
-		$('#signal'+msg).text('失去连接');
-	});
-	socket.on('info', function ( msg ){
-		var n = msg.n;
-		infoOpt.title = n+"号车";
-		$('#signal'+n).text('已连接');
-		
-		if ( !infoWindows[n] ){
-			infoWindows[n] = new BMap.InfoWindow('', infoOpt);
-		}
-		var s = "";
-		var arr = JSON.parse(msg.json);
-		for ( var i in  arr){
-			s += "LAC:"+arr[i].lac+",CID:"+arr[i].cid+"<br/>";
-		}
-		infoWindows[n].setContent(s);
-		s = n+"号车:<br/>"+s;
-		$('#car'+n).html(s);
-	});
-	socket.on('update', function( msg ){
-		if ( custom == false ){
-			//console.log( msg );
-			infos = parse(msg);
-			fillInputs(infos);
-			draw(infos);
-		}
-	});
-	socket.on('target', function(msg){
-		if ( custom == false ){
-			targetPoint?targetPoint.remove():'';
-			var t = JSON.parse(msg);
-			targetPoint = new Point(t.j, t.w, true, true);
-			$.when( targetPoint.dtd ).done( function(){
-				targetPoint.draw({icon:MyIcon});
-				var n = t.n+1;
-				$('fieldset.p'+n).find('input[name=x]').val(t.j);
-				$('fieldset.p'+n).find('input[name=y]').val(t.w);
-			} );
-			
-		}
-	});
-	function parse(msg){
-		var arr = [];
-		for ( var i in msg ){
-			arr.push(JSON.parse(msg[i]));
-		}
-		return arr;
-	}
-	function fillInputs(infos){
-		for( var i = 0; i < infos.length; i++ ){
-			var info = infos[i];
-			var n = Number(info.n) + 1;
-			$('fieldset.p'+n).find('input[name=x]').val(info.j);
-			$('fieldset.p'+n).find('input[name=y]').val(info.w);
-			$('fieldset.p'+n).find('input[name=ang]').val(info.dir);
-			$('fieldset.p'+n).find('input[name=range]').val(info.ang);
-		}
-	}
-	function draw(infos){
-		for ( var i = 0; i < infos.length; i++ ){
-			var info = infos[i];
-			if ( carEnable[info.n] == false ){
-				continue;
-			}
-			if ( !infoBox.info ){
-				infoBox.setInfo(info);
-				infoBox.update(tpl);
-			}
-			var p = new Point(info.j, info.w, true, true);
-			$.when( p.dtd ).done(function(){
-				if ( center == null ){
-					center = p;
-					map.centerAndZoom(center.bmap, 12 );
-				}
-				var sector = new Sector( p, Number(info.dir), Number(info.ang)/2, config_arr[info.n]);
-				if ( component[info.n] ){
-					component[info.n].remove();
-				}
-				component[info.n] = sector;
-				
-				sector.draw(20000);
-				sector.p.marker.nnn = info.n;
-				sector.p.marker.ppp = sector.p;
-				sector.p.marker.addEventListener('mouseover', function(){
-					if ( infoWindows[this.nnn] ){
-						infoWindows[this.nnn].redraw();
-						map.openInfoWindow(infoWindows[this.nnn],this.ppp.bmap);
-					}
-				})
-				
-				sector.p.marker.addEventListener('mouseout', function(){
-					if ( infoWindows[this.nnn] ){
-						map.closeInfoWindow(infoWindows[this.nnn]);
-					}
-				})
-				target();
-			});
-		}
-		
-	}
-	function countComponent (){
-		var arr = [];
-		for ( var i in component ){
-			if ( component[i] && carEnable[i]){
-				arr.push(i);
-			}
-		}
-		console.log(arr);
-		return arr;
-	}
-	//calculate and draw the target area
-	function target(){
-		var ppp;
-		var keys = countComponent();
-		if ( polygon1 ){
-			polygon1.remove();
-		}
-		if ( polygon2 ){
-			polygon2.remove();
-		}
-		if ( keys.length >= 2 ){
-			
-			s1 = component[keys[0]];
-			s2 = component[keys[1]];
+}
 
-			polygon1 = s1.clip(s2.polygon);
-			if ( keys.length == 3 ){
-				s3 = component[2];
+function countComponent (){
+	var arr = [];
+	for ( var i in component ){
+		if ( component[i] ){
+			arr.push(i);
+		}
+	}
+	console.log(arr);
+	return arr;
+}
 
-				polygon2 = s3.clip(polygon1);
-				polygon2.draw();
-				ppp = polygon2;
-			} else {
-				polygon1.draw();
-				ppp = polygon1;
-			}
-			var store = ppp.path.map(function(p){
-				return p.bmap;
-			})
-			
-			socket.emit('store', {time:new Date().getTime(), polygon:store, target:targetPoint?targetPoint.bmap:null});
-		}
+//calculate and draw the target area
+function target(){
+	var ppp;
+	var keys = countComponent();
+	if ( polygon1 ){
+		polygon1.remove();
 	}
-	//remove all overlay
-	function earse(){
-		//targetPoint.remove();
-		for ( var i in component ){
-			component[i].remove();
-			if (polygon2){
-				polygon2.remove();
-			}
-		}
-		component = {};
+	if ( polygon2 ){
+		polygon2.remove();
 	}
+	if ( keys.length >= 2 ){
+		
+		s1 = component[keys[0]];
+		s2 = component[keys[1]];
+
+		polygon1 = s1.clip(s2.polygon);
+		if ( keys.length == 3 ){
+			s3 = component[2];
+
+			polygon2 = s3.clip(polygon1);
+			polygon2.draw();
+			ppp = polygon2;
+		} else {
+			polygon1.draw();
+			ppp = polygon1;
+		}
+		var store = ppp.path.map(function(p){
+			return p.bmap;
+		})
+		
+		socket.emit('store', {time:new Date().getTime(), polygon:store, target:targetPoint?targetPoint.bmap:null});
+	}
+}
+
+
+//establish socket.io connection
+var socket = io();
+
+//infos from cars
+socket.on('target', function(msg){
+	var targetEnable;
+	msg = JSON.parse(msg);
+	console.log(msg.t);
+	if ( !infoBox.info ){
+		infoBox.setInfo(msg.info);
+		infoBox.update(tpl);
+	}
+	var cars = [ msg.p0, msg.p1, msg. p2 ];
+
+	targetPoint?targetPoint.remove():'';
+	var t = msg.t;
+	if ( t.j && t.w ){
+		targetEnable = true;
+		targetPoint = new Point(t.j, t.w, true, true, {msg:msg.t});
+		$.when( targetPoint.dtd ).done( function(){
+			targetPoint.draw({icon:MyIcon});
+		});
+	} else {
+		targetEnable = false;
+	}
+
+	if ( targetEnable && msg.findTarget ){
+		$.when( targetPoint.dtd ).done( function(){
+			draw(cars, msg.findTarget);
+		});
+	} else {
+		draw(cars, msg.findTarget);
+	}
+});
 </script>
-</head>  
-<body>  
-  <div id="container"></div>
-<script type="text/javascript">
+<body>
+	<div id="container"></div>
+	<script>
 var map = new BMap.Map("container");          // 创建地图实例
 map.enableScrollWheelZoom();
 // var point = new Point(77.32111, 38.70852);
 var point = new Point(116.404, 39.925, true);
 map.centerAndZoom(point.bmap, 12 );
-var center = null;
-map.addControl(new BMap.NavigationControl());
-var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
-map.addControl(scaleControl);
 
 var infoBox = new InfoControl('info');
 infoBox.defaultOffset = new BMap.Size(10, 80);
 map.addControl(infoBox);
-infoBox.hide('right');
-
-
-var customBox = new InfoControl('custom');
-customBox.defaultAnchor = BMAP_ANCHOR_BOTTOM_RIGHT;  
-customBox.setInfo(null);
-map.addControl(customBox);
-customBox.hide('bottom');
-customBox.update(tpl2);
-//custom box events
-$('#enable_hand').click(function(){
-	custom = $(this).prop('checked');
-	earse();
-})
-$('#draw').click(function(){
-	earse();
-	var promises = [];
-	for ( var i = 1; i <= 3; i++ ){
-		var dtd = new $.Deferred();
-		promises.push(dtd);
-		var inputs = $('.p'+i).find('input');
-		var x = inputs[0].value;
-		var y = inputs[1].value;
-		var ang = inputs[2].value;
-		var range = inputs[3].value;
-		var p = new Point(x, y, true, true, {i:i, ang:ang, range:range, dtd:dtd});
-		$.when(p.dtd).done(function(){
-			console.log(this);
-			component[this.i-1] = new Sector(this.p ,Number(this.ang), Number(this.range)/2, config_arr[this.i-1]);
-			component[this.i-1].draw(20000);
-			this.dtd.resolve();
-		});
-	}
-	$.when.apply(undefined, promises).done(function(){
-		target();
-	});
-});
-
-var targetBox = new InfoControl('targetBox');
-targetBox.defaultAnchor = BMAP_ANCHOR_BOTTOM_RIGHT;
-targetBox.defaultOffset = new BMap.Size(480,10);
-targetBox.setInfo(null);
-map.addControl(targetBox);
-targetBox.hide('bottom');
-targetBox.update(tpl6);
-$('#drawTarget').click(function(){
-	inputs = $('.p4').find('input');
-	x = inputs[0].value;
-	y = inputs[1].value;
-	var t = new Point(x, y, true, true);
-	if ( targetPoint ){
-		targetPoint.remove();
-	}
-	targetPoint = t;
-	$.when(targetPoint.dtd).done(function(){
-		targetPoint.draw({icon:MyIcon});
-	});
-});
-
-var sectorBox = new InfoControl('sector');
-sectorBox.defaultOffset = new BMap.Size(10, 220);
-sectorBox.setInfo(null);
-map.addControl(sectorBox);
-sectorBox.hide('right');
-sectorBox.update(tpl3);
-$('#sector input').click(function(){
-	var n = $(this).attr('name');
-	carEnable[n] = $(this).prop('checked');
-	if ( carEnable[n] ){
-		component[n].draw(20000);
-	} else {
-		component[n].remove();
-	}
-	
-	console.log(carEnable);
-});
-
-var carsBox = new InfoControl('cars');
-carsBox.defaultOffset = new BMap.Size( 10, 330 );
-carsBox.setInfo(null);
-map.addControl(carsBox);
-carsBox.hide('right');
-carsBox.update(tpl4);
-
-var connectionBox = new InfoControl('connection');
-connectionBox.defaultAnchor = BMAP_ANCHOR_BOTTOM_LEFT;
-connectionBox.defaultOffset = new BMap.Size(10,10);
-connectionBox.setInfo(null);
-map.addControl(connectionBox);
-connectionBox.hide('bottom');
-connectionBox.update(tpl5);
-$('#connection').show();
-var MyIcon=new BMap.Icon("http://api.map.baidu.com/library/CurveLine/1.5/src/circle.png",new BMap.Size(16, 16));
-/*
-var ang1 = 80;
-var ang2 = 280;
-var ang3 = 180;
-
-var config = {
-	lineColor: 'blue'
-}
-var p1 = new Point(116.354, 39.915, true);
-var p2 = new Point(116.454, 39.915, true);
-var sector1 = new Sector( p1, ang1, range, config);
-sector1.draw(10000);
-var sector2 = new Sector( p2, ang2, range, {
-	lineColor: 'red'
-});
-sector2.draw(10000);
-var polygon = sector1.intersection(sector2);
-var sector3 = new Sector( new Point(116.404, 39.979, true), ang3, range, {
-	lineColor:'black'
-});
-sector3.draw(10000);
-polygon = sector3.clip(polygon);
-polygon.draw();
-*/
-</script>  
-</body>  
+	</script>
+</body>
 </html>

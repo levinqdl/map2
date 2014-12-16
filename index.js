@@ -19,19 +19,13 @@ conn.connect(function(err){
 var qm = new QueueManager();
 var looper = new Looper();
 
-
 app.get('/', function(req, res){
   res.sendFile(__dirname+'/index.html');
 });
-app.get('/base.js', function(req, res){
-  res.sendFile(__dirname+'/js/base.js');
-});
-app.get('/jquery.js', function(req, res){
-  res.sendFile(__dirname+'/js/jquery-1.11.1.min.js');
-});
-app.get('/history', function(req, res){
-  res.sendFile(__dirname+'/history.html');
-});
+app.get(/^([\/\w\.-]+)$/, function( req, res){
+	console.log(req.params[0]);
+	res.sendFile(__dirname+'/'+req.params[0]);
+})
 
 app.post('/call', function( req, res ){
 	var postData = ""; 
@@ -43,25 +37,25 @@ app.post('/call', function( req, res ){
 		//parse post data
         var params = querystring.parse(postData);
         console.log(params);
-        console.log(params["data"]);
 		
 		//parse json data
 		if ( params["json"] ){
-			var data = JSON.parse( params["json"] );
-			if ( data.n != 3 ){
-				qm.getQueueById(data.n).enqueue(params['json']); // dispatch and enqueue
+			io.emit('target', params['json']);
+			// var data = JSON.parse( params["json"] );
+			// if ( data.n != 3 ){
+			// 	qm.getQueueById(data.n).enqueue(params['json']); // dispatch and enqueue
 				
-				for ( var key in data ){
-					console.log( key+":"+data[key] );
-				}
-				console.log('data received');
-			} else {
-				io.emit('target', params['json']);
-			}
+			// 	for ( var key in data ){
+			// 		console.log( key+":"+data[key] );
+			// 	}
+			// 	console.log('data received');
+			// } else {
+			// 	io.emit('target', params['json']);
+			// }
 		}
 		
 		// qm.getQueueById(data.N).enqueue( data.value );
-        res.writeHead(500, {
+        res.writeHead(200, {
             "Content-Type": "text/plain;charset=utf-8"
         });
         res.end("call success\n");

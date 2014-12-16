@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<meta chartset="utf-8"/>
+<title>覆盖范围展示</title>
+<style type="text/css">  
+html{height:100%}  
+body{height:100%;margin:0px;padding:0px}  
+#container{height:100%}
+.head{
+	text-align:center;
+	height:30px;
+	line-height:30px;
+}
+#info{
+	width:210px;
+	color:white;
+	filter:alpha(opacity=80);  /*支持 IE 浏览器*/
+	-moz-opacity:0.80; /*支持 FireFox 浏览器*/
+	opacity:0.80;  /*支持 Chrome, Opera, Safari 等浏览器*/
+}
+</style>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=8fGnKKi1WTZdVnAY6DmAPGyK"></script>
+<script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
+<script type="text/javascript" src="/js/base.js"></script>
+<script src="/js/jquery-1.11.1.min.js"></script>
+<script>
+var ang = 20;
+var scale = 6763;//1=0.00073935km
+
+var map;
+var center = null;
+var MyIcon=new BMap.Icon("http://api.map.baidu.com/library/CurveLine/1.5/src/circle.png",new BMap.Size(16, 16));
+var config_arr = [{lineColor: 'blue'},{lineColor: 'red'},{lineColor: 'black'}];
+
+var distances = {
+	item:[]
+};
+var arrStart = {
+	'4': -6,
+	'2': -6,
+	'1': -6,
+	'0': -5,
+	'-1': -3,
+	'-2': -2,
+	'-3': -3,
+	'-4': 0,
+}
+
+var arrJump = {
+	'4':[2],
+	'3':[-1,0,1],
+	'2':[0],
+	'1':[-4,-3,-2],
+	'0':[-3, -2],
+}
+var arrEnd = {
+	'4':6,
+	'3':5,
+	'2':4,
+	'1':3,
+}
+var points = [];
+var stations = [
+	{j:77.44016, w:38.74809},
+	{j:77.41838, w:38.72343},
+	{j:77.32111, w:38.70852},
+	{j:77.28738, w:38.65305},
+	{j:77.44522, w:38.80689},
+	{j:77.38359, w:38.731},
+	{j:77.40061, w:38.69572},
+	{j:77.44605, w:38.83908},
+	{j:77.41327, w:38.75855},
+	{j:77.31075, w:38.68183},
+	{j:77.26505, w:38.80998},
+];
+$(function () {
+	map = new BMap.Map("container");          // 创建地图实例
+	map.enableScrollWheelZoom();
+map.addControl(new BMap.MapTypeControl());
+	var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
+map.addControl(scaleControl);
+
+	count = 0;
+	for ( var k = -4; k < 5; k++){
+		points[k] = new Array();
+		var jStart = typeof arrStart[k] != 'undefined'?arrStart[k]:-8;
+		var jEnd = typeof arrEnd[k] != 'undefined'?arrEnd[k]:2;
+		for ( var j = jStart; j < jEnd; j ++ ){
+			points[k][j] = new Array();
+			if ( $.inArray(j,arrJump[k]) != -1 ){
+				continue;
+			}
+			for ( var i in stations){
+				points[k][j][i] = new Point( stations[i].j+j*0.2+(Math.random()*10-5)/100, stations[i].w+k*0.25+(Math.random()*10-5)/100, true, false, {i:i, j:j, k:k}, true );
+				if ( center == null ){
+					center = points[k][j][i];
+					map.centerAndZoom(center.bmap, 11 );
+				}
+				points[k][j][i].draw();
+				count++;
+				// $.when( points[k][j][i].dtd ).done( function(){
+				// 	var i = this.i, j = this.j, k = this.k;
+					
+				// })
+			}
+		}
+	}
+	console.log(count);
+	var tpl = "<div class='head'>信息</div><div class='items'><div class='item'>共"+count+"个定位点</div></div>";
+	var infoBox = new InfoControl('info');
+infoBox.defaultOffset = new BMap.Size(10, 80);
+map.addControl(infoBox);
+		infoBox.update(tpl);
+	
+})
+</script>
+<body>
+	<div id="container"></div>
+</body>
+</html>

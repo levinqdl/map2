@@ -15,15 +15,17 @@ function getPoint ( x, y ){
 	});
 	return dtd.promise();
 }
-function Point( x, y, lngLat, gps, context ){
+function Point( x, y, lngLat, gps, context, trueValue ){
 	this.dtd = $.Deferred();
 	if ( !context ){
 		context = {};
 	}
 	if ( lngLat ){
 		if ( gps ){
-			x = Math.floor(x/100) + ( x - Math.floor(x/100) * 100 ) / 60;
-			y = Math.floor(y/100) + ( y - Math.floor(y/100) * 100 ) / 60;
+			if ( !trueValue ){
+				x = Math.floor(x/100) + ( x - Math.floor(x/100) * 100 ) / 60;
+				y = Math.floor(y/100) + ( y - Math.floor(y/100) * 100 ) / 60;
+			}
 			gpsPoint = new BMap.Point(x,y);
 			context.p = this;
 			BMap.Convertor.translate(gpsPoint,0,function(point){
@@ -49,6 +51,19 @@ Point.prototype.draw = function(config){
 Point.prototype.remove = function(){
 	map.removeOverlay(this.marker);
 }
+Point.prototype.direction = function(point) {
+	var x = point.pixel.x - this.pixel.x, y = point.pixel.y - this.pixel.y;
+	var rad = Math.atan(x/y);
+	if ( y < 0 ){
+		rad += Math.PI;
+	}
+	console.log("atan:"+rad);
+	return rad/0.017453293;
+};
+Point.prototype.distance = function(point) {
+	var x = this.pixel.x-point.pixel.x, y = this.pixel.y-point.pixel.y;
+	return Math.sqrt(x*x + y*y);
+};
 
 //线定义，传入点斜式：y-y1=k(x-x1)，转为一般式：ax+by+c=0
 //x,点的横坐标，实为经度

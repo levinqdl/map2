@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<meta chartset="utf-8"/>
+<title>定位展示</title>
+<style type="text/css">  
+html{height:100%}  
+body{height:100%;margin:0px;padding:0px}  
+#container{height:100%}
+#custom{
+padding: 10px;
+color:white;
+filter:alpha(opacity=80);  /*支持 IE 浏览器*/
+-moz-opacity:0.80; /*支持 FireFox 浏览器*/
+opacity:0.80;  /*支持 Chrome, Opera, Safari 等浏览器*/
+}
+#custom input[type=text], #targetBox input[type=text]{
+width:75px;
+margin-right:10px;
+}
+#custom #draw, #targetBox #drawTarget{
+margin:10px;
+float:right;
+}
+
+</style>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.5&ak=8fGnKKi1WTZdVnAY6DmAPGyK"></script>
+<script type="text/javascript" src="http://developer.baidu.com/map/jsdemo/demo/convertor.js"></script>
+<script type="text/javascript" src="/js/base.js"></script>
+<script src="/js/jquery-1.11.1.min.js"></script>
+<script>
+function calScale (m) {
+	return Math.round(m*100/0.73935)/100;
+}
+var ang = 20;
+var m = 5000;
+var scale = calScale(5000);
+var tpl2 = "测量距离(米):<input type='text' name='scale' value='"+m+"'/> 夹角(度)):<input type='text' name='range' value='"+ang+"'/>";
+var map;
+var center = null;
+var MyIcon=new BMap.Icon("http://api.map.baidu.com/library/CurveLine/1.5/src/circle.png",new BMap.Size(16, 16));
+var config_arr = [{lineColor: 'blue'},{lineColor: 'red'},{lineColor: 'black'}];
+
+var distances = {
+	item:[]
+};
+function compare(propertyName) { 
+	return function (object1, object2) { 
+		var value1 = object1[propertyName]; 
+		var value2 = object2[propertyName]; 
+		if (value2 < value1) { 
+			return 1; 
+		} 
+		else if (value2 > value1) { 
+			return -1; 
+		} 
+		else { 
+			return 0; 
+		} 
+	} 
+} 
+var points = [];
+var stations = [
+	{j:77.44016, w:38.74809},
+	{j:77.41838, w:38.72343},
+	{j:77.32111, w:38.70852},
+	{j:77.28738, w:38.65305},
+	{j:77.44522, w:38.80689},
+	{j:77.38359, w:38.731},
+	{j:77.40061, w:38.69572},
+	{j:77.44605, w:38.83908},
+	{j:77.41327, w:38.75855},
+	{j:77.31075, w:38.68183},
+	{j:77.26505, w:38.80998},
+	{j:77.42779, w:38.93421},
+
+	// {j:77.31137, w:38.679443},
+	{j:77.32441, w:38.71307},
+	{j:77.39087, w:38.6916},
+	// {j:77.44609, w:38.80808},
+	// {j:77.310991, w:38.68003},
+	// {j:77.414, w:38.75874},
+	{j:77.39751, w:38.75377},
+	// {j:77.32, w:38.7081},
+	{j:77.2664, w:38.8177},
+	{j:77.28387, w:38.8427},
+	// {j:77.3114, w:38.6795},
+	{j:77.29384, w:38.65925},
+	{j:77.29556, w:38.71077},
+	// {j:77.289682, w:38.651636},
+	// {j:77.4506, w:38.8103},
+	{j:77.43648, w:38.83186},
+	{j:77.41699, w:38.81714},
+	// {j:77.3804, w:38.7323},
+	// {j:77.39967, w:38.69554},
+	{j:77.4276, w:38.9348},
+	{j:77.43196, w:38.92219},
+
+];
+var conut;
+var stationDtd = $.Deferred();
+
+var component= [];
+var polygon, targetPoint;
+
+//calculate and draw the target area
+function target(){
+	for ( var i in component ){
+		component[i].remove();
+	}
+	if ( polygon ){
+		polygon.remove();
+	}
+	component = [];
+	for ( var i = 0; i < 3; i++ ){
+		var index = distances.item[i].i;
+
+		if ( distances.item[i].value > scale ){
+			break;
+		}
+		var sector = new Sector( stations[index], stations[index].direction(targetPoint), ang/2, config_arr[i%3]);
+		
+		component.push(sector);
+		
+		sector.draw(scale);
+	}
+	if ( component.length > 1 ){
+		polygon = component[0].polygon;
+		for ( var i = 1; i < component.length; i++ ){
+			polygon = component[i].clip(polygon);
+		}
+		polygon.draw();
+	}
+}
+
+$(function () {
+	map = new BMap.Map("container");          // 创建地图实例
+	map.enableScrollWheelZoom();
+
+	var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
+map.addControl(scaleControl);
+map.addControl(new BMap.MapTypeControl());          
+
+var customBox = new InfoControl('custom');
+customBox.defaultAnchor = BMAP_ANCHOR_BOTTOM_RIGHT;  
+customBox.setInfo(null);
+map.addControl(customBox);
+customBox.update(tpl2);
+$('input[name=range]').keyup(function(){
+	ang = $(this).val();
+	target();
+});
+$('input[name=scale]').keyup(function(){
+	scale = calScale($(this).val());
+	target();
+});
+
+	count = 0;
+	for ( var i in stations){
+		stations[i] = new Point( stations[i].j, stations[i].w, true, true, {i:i}, true );
+		$.when( stations[i].dtd ).done( function(){
+			var i = this.i;
+			if ( center == null ){
+				center = stations[i];
+				map.centerAndZoom(center.bmap, 11 );
+			}
+			stations[i].draw();
+			count++;
+			if ( count == stations.length ){
+				stationDtd.resolve();
+			}
+		})
+	}
+	map.addEventListener("click", function(e){
+		targetPoint?targetPoint.remove():'';
+		targetPoint = new Point(e.point.lng, e.point.lat, true);
+		targetPoint.draw({icon:MyIcon});
+		distances.item= [];
+		for ( var i in stations ){
+			distances.item.push({i:i, value:stations[i].distance(targetPoint)});
+		}
+		for ( var i in distances.item ){
+			//console.log( distances.item[i].i +":"+distances.item[i].value);
+		}
+		distances.item.sort(compare('value'));
+		for ( var i in distances.item ){
+			console.log( distances.item[i].i +":"+distances.item[i].value);
+		}
+		target();
+		
+	});
+})
+</script>
+<body>
+	<div id="container"></div>
+</body>
+</html>

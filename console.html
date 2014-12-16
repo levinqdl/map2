@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<meta charset="utf-8"/>
+<title>控制台</title>
+<script src="/js/jquery-1.11.1.min.js"></script>
+<script>
+var setId;
+function fillInput (name, value) {
+	$('#'+setId+' input[name="'+name+'"]').val(value);
+}
+function ajaxSubmit(dataPara, fn) {    
+    $.ajax({
+        url: "http://localhost:3001/call",
+        type: "post",
+        data: {json:dataPara},
+        success: fn
+    });
+}
+$(function(){
+	setId = 'info';
+	fillInput('tel', '18510654622');
+	fillInput('lac', '12345');
+	fillInput('cid', '54321');
+	fillInput('f', '98765');
+	fillInput('tmsi', 'ab852cd8');
+	fillInput('ta', 'ss');
+
+	setId = "p1";
+	fillInput('j', '11635.40000');
+	fillInput('w', '3991.50000');
+	fillInput('dir', '60');
+	fillInput('ang', '20');
+	
+	setId = "p2";
+	fillInput('j', '11645.40000');
+	fillInput('w', '3991.50000');
+	fillInput('dir', '300');
+	fillInput('ang', '20');
+	
+	setId = "p3";
+	fillInput('j', '11640.40000');
+	fillInput('w', '3997.90000');
+	fillInput('dir', '180');
+	fillInput('ang', '20');
+
+	setId = "t";
+	fillInput('j', '11640.40000');
+	fillInput('w', '3994.90000');
+
+	$('#draw').click(function() {
+		var json = {};
+		json.findTarget = $('#findTarget').prop("checked");
+		json.time = new Date().toTimeString().substr(0,8).replace(/:/g,'');
+		json.info = {};
+		var info = json.info;
+		$('#info').find('input').each( function () {
+			info[$(this).attr('name')] = ''+$(this).val();
+		})
+
+		$('.sub').each(function () {
+			var n = $(this).find('input[name=p]').val();
+			var inputs = $(this).find('input.info');
+			json[n] = {};
+			inputs.each(function () {
+				json[n][$(this).attr('name')] = $(this).val();
+			})
+		})
+
+		ajaxSubmit( JSON.stringify(json), function () {});
+
+	});
+})
+</script>
+<body>
+	<section>
+		<form action="http://localhost:3001/call" method="post">
+			<fieldset id='info'>
+				<legend>信息</legend>
+				目标号码:<input type="text" name="tel"/>
+				大区号:<input type="text" name="lac"/>
+				小区号:<input type="text" name="cid"/>
+				频点:<input type="text" name="f"/>
+				临时识别码:<input type="text" name="tmsi"/><br/>
+				时间调整:<input type="text" name="ta"/>
+			</fieldset>
+			<fieldset id="p1" class="sub">
+				<legend>0号车</legend>
+				<input type="hidden" name="p" value="p0"/>
+				<input type="hidden" name="n" value="0" class="info"/>
+				E:<input type="text" name="j" class="info">
+				N:<input type="text" name="w" class="info">
+				D:<input type="text" name="dir" class="info">
+				A:<input type="text" name="ang" class="info">
+			</fieldset>
+			<fieldset id="p2" class="sub">
+				<legend>1号车</legend>
+				<input type="hidden" name="p" value="p1"/>
+				<input type="hidden" name="n" value="1" class="info"/>
+				E:<input type="text" name="j" class="info">
+				N:<input type="text" name="w" class="info">
+				D:<input type="text" name="dir" class="info">
+				A:<input type="text" name="ang" class="info">
+			</fieldset>
+			<fieldset id="p3" class="sub">
+				<legend>2号车</legend>
+				<input type="hidden" name="p" value="p2"/>
+				<input type="hidden" name="n" value="2" class="info"/>
+				E:<input type="text" name="j" class="info">
+				N:<input type="text" name="w" class="info">
+				D:<input type="text" name="dir" class="info">
+				A:<input type="text" name="ang" class="info">
+			</fieldset>
+			<div class="head">目标</div>
+			<fieldset id="t" class="sub">
+				<legend>Target</legend>
+				<input type="hidden" name="p" value="t"/>
+				<input type="hidden" name="n" value="3" class="info"/>
+				E:<input type="text" name="j" class="info">
+				N:<input type="text" name="w" class="info">
+			</fieldset>
+			定向到目标：<input type="checkbox" id="findTarget"/>
+			<input type="button" value="提交" id="draw">
+		</form>
+	</section>
+</body>
+</html>
