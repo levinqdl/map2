@@ -26,7 +26,7 @@ body{height:100%;margin:0px;padding:0px}
 <script src="/socket.io/socket.io.js"></script>
 <script>
 var scale = 25000;
-var tpl = "<div class='head'>信息</div><div class='items'><div class='item'>目标号码:{TEL}</div><div class='item'>大区号:{LAC}</div><div class='item'>小区号:{CID}</div><div class='item'>频点:{F}</div><div class='item'>临时识别码:{TMSI}</div><div class='item'>时间调整:{TA}</div></div>";
+var tpl = "<div class='head'>目标信息</div><div class='items'><div class='item'>目标号码:{TEL}</div><div class='item'>大区号:{LAC}</div><div class='item'>小区号:{CID}</div><div class='item'>频点:{F}</div><div class='item'>临时识别码:{TMSI}</div><div class='item'>时间调整:{TA}</div></div>";
 var component= {};
 var polygon1, polygon2, targetPoint;
 var center = null;
@@ -74,7 +74,7 @@ function countComponent (){
 			arr.push(i);
 		}
 	}
-	console.log(arr);
+	// console.log(arr);
 	return arr;
 }
 
@@ -121,10 +121,9 @@ socket.on('target', function(msg){
 	var targetEnable;
 	msg = JSON.parse(msg);
 	console.log(msg.t);
-	if ( !infoBox.info ){
+
 		infoBox.setInfo(msg.info);
 		infoBox.update(tpl);
-	}
 	var cars = [ msg.p0, msg.p1, msg. p2 ];
 
 	targetPoint?targetPoint.remove():'';
