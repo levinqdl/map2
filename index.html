@@ -154,6 +154,7 @@ map.enableScrollWheelZoom();
 var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
 map.addControl(scaleControl);
 map.addControl(new BMap.MapTypeControl());
+map.addControl(new BMap.NavigationControl());
 // var point = new Point(77.32111, 38.70852);
 var point = new Point(116.404, 39.925, true);
 map.centerAndZoom(point.bmap, 12 );

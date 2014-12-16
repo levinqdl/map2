@@ -79,6 +79,7 @@ $(function () {
 map.addControl(new BMap.MapTypeControl());
 	var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
 map.addControl(scaleControl);
+map.addControl(new BMap.NavigationControl());
 
 	count = 0;
 	for ( var k = -4; k < 5; k++){

@@ -138,6 +138,7 @@ $(function () {
 
 	var scaleControl = new BMap.ScaleControl( {offset: new BMap.Size(60, 10),anchor: BMAP_ANCHOR_TOP_LEFT});
 map.addControl(scaleControl);
+map.addControl(new BMap.NavigationControl());
 map.addControl(new BMap.MapTypeControl());          
 
 var customBox = new InfoControl('custom');
